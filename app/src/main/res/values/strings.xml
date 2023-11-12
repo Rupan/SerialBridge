@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">Serial Bridge</string>
+    <string name="port_number_label">Port number</string>
+    <string name="network_parameters">Network Parameters</string>
+    <string name="protocol_tcp">TCP</string>
+    <string name="protocol_udp">UDP</string>
+    <string name="default_port_number">32000</string>
 </resources>
