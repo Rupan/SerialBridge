@@ -5,10 +5,29 @@ import androidx.appcompat.widget.AppCompatAutoCompleteTextView;
 
 import android.os.Bundle;
 import android.widget.ArrayAdapter;
-import android.widget.AutoCompleteTextView;
-import android.widget.TextView;
+
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
 
 public class BridgingActivity extends AppCompatActivity {
+
+    private List<String> get_all_addrs() throws SocketException, NullPointerException {
+        List<String> fa = new ArrayList<>();
+        Enumeration<NetworkInterface> e = NetworkInterface.getNetworkInterfaces();
+        while (e.hasMoreElements()) {
+            NetworkInterface intf = e.nextElement();
+            Enumeration<InetAddress> i = intf.getInetAddresses();
+            while (i.hasMoreElements()) {
+                InetAddress intf_addr = i.nextElement();
+                fa.add(String.format("%s: %s", intf.getName(), intf_addr.getHostAddress()));
+            }
+        }
+        return fa;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -17,13 +36,14 @@ public class BridgingActivity extends AppCompatActivity {
         // final TextView t = findViewById(R.id.network_parameters_header);
         // t.setText("some static text");
         // t.setText(R.string.user_greeting);
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
-                android.R.layout.simple_dropdown_item_1line, COUNTRIES);
-        AppCompatAutoCompleteTextView textView = findViewById(R.id.ip_address_dropdown);
-        textView.setAdapter(adapter);
+        try {
+            List<String> addrlist = get_all_addrs();
+            ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
+                    android.R.layout.simple_dropdown_item_1line, addrlist);
+            AppCompatAutoCompleteTextView textView = findViewById(R.id.ip_address_dropdown);
+            textView.setAdapter(adapter);
+        } catch (SocketException | NullPointerException se) {
+            // TODO: log something (maybe a toast?)
+        }
     }
-
-    private static final String[] COUNTRIES = new String[] {
-            "Belgium", "France", "Italy", "Germany", "Spain"
-    };
 }
