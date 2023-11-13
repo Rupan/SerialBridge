@@ -45,12 +45,12 @@
         </com.google.android.material.button.MaterialButtonToggleGroup>
 
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/port_number"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:hint="@string/port_number_label">
             <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/port_number"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:maxLength="5"
@@ -60,7 +60,7 @@
     </LinearLayout>
 
     <LinearLayout
-        android:orientation="horizontal"
+        android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
@@ -68,6 +68,8 @@
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
 
 <!--            MaterialTextView -->
@@ -77,6 +79,12 @@
                 android:layout_height="wrap_content"
                 android:hint="@string/ip_address_label"/>
         </com.google.android.material.textfield.TextInputLayout>
+        <com.google.android.material.divider.MaterialDivider
+            app:dividerInsetStart="0dp"
+            app:dividerInsetEnd="0dp"
+            app:dividerThickness="4dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
     </LinearLayout>
 
 </RelativeLayout>
