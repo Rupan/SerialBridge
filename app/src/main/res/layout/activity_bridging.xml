@@ -11,9 +11,11 @@
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:gravity="center_horizontal"
+        android:textSize="36sp"
         android:text="@string/network_parameters" />
 
     <LinearLayout
+        android:id="@+id/protocol_and_port"
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -54,6 +56,26 @@
                 android:maxLength="5"
                 android:text="@string/default_port_number"
                 android:inputType="number" />
+        </com.google.android.material.textfield.TextInputLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_below="@+id/protocol_and_port">
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+
+<!--            MaterialTextView -->
+            <androidx.appcompat.widget.AppCompatAutoCompleteTextView
+                android:id="@+id/ip_address_dropdown"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/ip_address_label"/>
         </com.google.android.material.textfield.TextInputLayout>
     </LinearLayout>
 

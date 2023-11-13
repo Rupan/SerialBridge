@@ -5,4 +5,5 @@
     <string name="protocol_tcp">TCP</string>
     <string name="protocol_udp">UDP</string>
     <string name="default_port_number">32000</string>
+    <string name="ip_address_label">IP Address</string>
 </resources>
