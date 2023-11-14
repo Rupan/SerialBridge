@@ -22,6 +22,8 @@ package com.github.rupan.serialbridge;
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
+import android.widget.Toast;
+
 import androidx.annotation.Nullable;
 
 import java.io.IOException;
@@ -33,6 +35,7 @@ import java.nio.channels.SocketChannel;
 public class BridgingService extends Service {
     // https://www.geeksforgeeks.org/services-in-android-with-example/#
     // https://stackoverflow.com/questions/11099305/why-does-my-android-service-block-the-ui
+    // https://developer.android.com/guide/components/services
     Thread mServiceThread = null;
 
     @Override
@@ -58,26 +61,26 @@ public class BridgingService extends Service {
 
     @Override
     public void onDestroy() {
+        super.onDestroy();
         if(mServiceThread == null) {
             return;
         }
         mServiceThread.interrupt();
         mServiceThread = null;
+        Toast.makeText(this, "service done", Toast.LENGTH_SHORT).show();
     }
 
-//    @Override
-//    public int onStartCommand(Intent intent, int flags, int startId) {
-//        return START_STICKY;
-//    }
-
-//    @Override
-//    public void onDestroy() {
-//        super.onDestroy();
-//    }
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        Toast.makeText(this, "service starting", Toast.LENGTH_SHORT).show();
+        // If we get killed, after returning from here, restart
+        return START_STICKY;
+    }
 
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
+        // We don't provide binding, so return null
         return null;
     }
 }
