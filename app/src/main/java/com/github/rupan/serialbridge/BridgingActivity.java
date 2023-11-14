@@ -3,6 +3,7 @@ package com.github.rupan.serialbridge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatAutoCompleteTextView;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.ArrayAdapter;
 
@@ -45,5 +46,8 @@ public class BridgingActivity extends AppCompatActivity {
         } catch (SocketException | NullPointerException se) {
             // TODO: log something (maybe a toast?)
         }
+        // getApplicationContext() ???
+        startService( new Intent( this, BridgingService.class ) );
+        stopService( new Intent( this, BridgingService.class ) );
     }
 }
