@@ -21,12 +21,15 @@ package com.github.rupan.serialbridge;
 
 import android.app.Service;
 import android.content.Intent;
+import android.os.Build;
 import android.os.IBinder;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.channels.ServerSocketChannel;
@@ -46,10 +49,11 @@ Can use Thread.isAlive() to check whether it is running
  */
 
 public class BridgingService extends Service {
+    InetAddress mBindAddress = null;
     Thread mServiceThread = new Thread() {
         public void run() {
             try ( ServerSocketChannel serverSocketChannel = ServerSocketChannel.open() ) {
-                InetSocketAddress xxyy = new InetSocketAddress((InetAddress)null, (int)9999);
+                InetSocketAddress xxyy = new InetSocketAddress(mBindAddress, (int)9999);
                 serverSocketChannel.socket().bind(xxyy);
 
                 while (true) {
@@ -77,6 +81,18 @@ public class BridgingService extends Service {
 
         super.onStartCommand(intent, flags, startId);
         Toast.makeText(this, "service starting", Toast.LENGTH_SHORT).show();
+        byte[] sia = intent.getByteArrayExtra("com.android.contacts.BindAddr");
+        if( sia != null ) {
+            try (ByteArrayInputStream bis = new ByteArrayInputStream(sia);
+                 ObjectInputStream ois = new ObjectInputStream(bis)) {
+                mBindAddress = (InetAddress) ois.readObject();
+//                Toast.makeText(this, String.format("Will bind listener to %s",
+//                        mBindAddress.getHostAddress()), Toast.LENGTH_SHORT).show();
+            } catch( IOException | ClassNotFoundException ioe ) {
+                Toast.makeText(this, "Exception deserializing InetAddress",
+                        Toast.LENGTH_SHORT).show();
+            }
+        }
         mServiceThread.start();
         // If we get killed, after returning from here, restart
         return START_STICKY;

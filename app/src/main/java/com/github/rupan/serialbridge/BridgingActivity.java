@@ -25,28 +25,42 @@ import androidx.appcompat.widget.AppCompatAutoCompleteTextView;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.ArrayAdapter;
+import android.widget.Toast;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
 
 public class BridgingActivity extends AppCompatActivity {
 
-    private List<String> get_all_addrs() throws SocketException, NullPointerException {
-        List<String> fa = new ArrayList<>();
+    private HashMap<String, byte[]> get_all_addrs() throws SocketException, NullPointerException {
+        HashMap<String, byte[]> fb = new HashMap<>();
         Enumeration<NetworkInterface> e = NetworkInterface.getNetworkInterfaces();
         while (e.hasMoreElements()) {
             NetworkInterface intf = e.nextElement();
             Enumeration<InetAddress> i = intf.getInetAddresses();
             while (i.hasMoreElements()) {
                 InetAddress intf_addr = i.nextElement();
-                fa.add(String.format("%s: %s", intf.getName(), intf_addr.getHostAddress()));
+                String hn = String.format("%s: %s", intf.getName(), intf_addr.getHostAddress());
+                try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                     ObjectOutputStream oos = new ObjectOutputStream(bos)) {
+                    oos.writeObject(intf_addr);
+                    fb.put( hn, bos.toByteArray() );
+                } catch( IOException ioe ) {
+                    Toast.makeText(this,
+                            "InetAddress serialization failed", Toast.LENGTH_SHORT).show();
+                }
             }
         }
-        return fa;
+        return fb;
     }
 
     @Override
@@ -56,8 +70,16 @@ public class BridgingActivity extends AppCompatActivity {
         // final TextView t = findViewById(R.id.network_parameters_header);
         // t.setText("some static text");
         // t.setText(R.string.user_greeting);
+        Intent bridgingIntent = new Intent( this, BridgingService.class );
         try {
-            List<String> addrlist = get_all_addrs();
+            HashMap<String, byte[]> address_map = get_all_addrs();
+            byte[] ipv6_loopback = address_map.get("lo: ::1"); // FIXME
+            if( ipv6_loopback != null ) {
+                bridgingIntent.putExtra("com.android.contacts.BindAddr", ipv6_loopback);
+            }
+            List<String> addrlist = new ArrayList<>(address_map.size());
+            addrlist.addAll(address_map.keySet());
+            Collections.sort(addrlist);
             ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
                     android.R.layout.simple_dropdown_item_1line, addrlist);
             AppCompatAutoCompleteTextView textView = findViewById(R.id.ip_address_dropdown);
@@ -66,7 +88,7 @@ public class BridgingActivity extends AppCompatActivity {
             // TODO: log something (maybe a toast?)
         }
         // getApplicationContext() ???
-        startService( new Intent( this, BridgingService.class ) );
-        stopService( new Intent( this, BridgingService.class ) );
+        startService( bridgingIntent );
+        stopService( bridgingIntent );
     }
 }
