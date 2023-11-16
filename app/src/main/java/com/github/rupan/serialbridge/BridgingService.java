@@ -32,55 +32,85 @@ import java.net.InetSocketAddress;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
-public class BridgingService extends Service {
-    // https://www.geeksforgeeks.org/services-in-android-with-example/#
-    // https://stackoverflow.com/questions/11099305/why-does-my-android-service-block-the-ui
-    // https://developer.android.com/guide/components/services
-    Thread mServiceThread = null;
+/*
+Future thoughts:
 
+Maybe use https://github.com/jjenkov/java-nio-server instead?
+A call to the interrupt() method of your Thread object can stop even blocking I/O
+
+https://www.geeksforgeeks.org/services-in-android-with-example/#
+https://stackoverflow.com/questions/11099305/why-does-my-android-service-block-the-ui
+https://developer.android.com/guide/components/services
+
+Can use Thread.isAlive() to check whether it is running
+ */
+
+public class BridgingService extends Service {
+    Thread mServiceThread = new Thread() {
+        public void run() {
+            try ( ServerSocketChannel serverSocketChannel = ServerSocketChannel.open() ) {
+                InetSocketAddress xxyy = new InetSocketAddress((InetAddress)null, (int)9999);
+                serverSocketChannel.socket().bind(xxyy);
+
+                while (true) {
+                    SocketChannel _socketChannel = serverSocketChannel.accept();
+                }
+            } catch (IOException ioe) {
+                // TODO: handle this
+            }
+        }
+    };
+
+    /*
     @Override
     public void onCreate() {
-        // Maybe use https://github.com/jjenkov/java-nio-server instead?
-        // A call to the interrupt() method of your Thread object can stop even blocking I/O
-        mServiceThread = new Thread() {
-            public void run() {
-                try ( ServerSocketChannel serverSocketChannel = ServerSocketChannel.open() ) {
-                    InetSocketAddress xxyy = new InetSocketAddress((InetAddress)null, (int)9999);
-                    serverSocketChannel.socket().bind(xxyy);
+        // The service is being created.
+        // This function initializes state for the service kind of like a constructor.
+    }
+    */
 
-                    while (true) {
-                        SocketChannel _socketChannel = serverSocketChannel.accept();
-                    }
-                } catch (IOException ioe) {
-                    // TODO: handle this
-                }
-            }
-        };
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        // The service is starting, due to a call to startService().
+        // Multiple requests to start the service result in multiple corresponding calls
+        // to the service's onStartCommand().
+
+        super.onStartCommand(intent, flags, startId);
+        Toast.makeText(this, "service starting", Toast.LENGTH_SHORT).show();
         mServiceThread.start();
+        // If we get killed, after returning from here, restart
+        return START_STICKY;
     }
 
     @Override
     public void onDestroy() {
-        super.onDestroy();
-        if(mServiceThread == null) {
-            return;
-        }
-        mServiceThread.interrupt();
-        mServiceThread = null;
-        Toast.makeText(this, "service done", Toast.LENGTH_SHORT).show();
-    }
+        // The service is no longer used and is being destroyed.
 
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        Toast.makeText(this, "service starting", Toast.LENGTH_SHORT).show();
-        // If we get killed, after returning from here, restart
-        return START_STICKY;
+        super.onDestroy();
+        Toast.makeText(this, "service stopping", Toast.LENGTH_SHORT).show();
+        mServiceThread.interrupt();
     }
 
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
+        // A client is binding to the service with bindService()
         // We don't provide binding, so return null
+
         return null;
     }
+
+    /*
+    @Override
+    public boolean onUnbind(Intent intent) {
+        // All clients have unbound with unbindService()
+        return allowRebind;
+    }
+
+    @Override
+    public void onRebind(Intent intent) {
+        // A client is binding to the service with bindService(),
+        // after onUnbind() has already been called
+    }
+    */
 }
