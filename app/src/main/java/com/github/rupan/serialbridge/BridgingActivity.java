@@ -23,12 +23,23 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatAutoCompleteTextView;
 
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.hardware.usb.UsbDevice;
+import android.hardware.usb.UsbManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Toast;
+
+import com.hoho.android.usbserial.driver.UsbSerialDriver;
+import com.hoho.android.usbserial.driver.UsbSerialProber;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -43,6 +54,26 @@ import java.util.HashMap;
 import java.util.List;
 
 public class BridgingActivity extends AppCompatActivity {
+    private static final String ACTION_USB_PERMISSION = "com.github.rupan.serialbridge.USB_PERMISSION";
+    private final BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (ACTION_USB_PERMISSION.equals(action)) {
+                synchronized (this) {
+                    UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+
+                    if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
+                        if(device != null){
+                            //call method to set up device communication
+                        }
+                    }
+                    else {
+                        Log.d("SOME TAG", "permission denied for device " + device);
+                    }
+                }
+            }
+        }
+    };
 
     @Nullable
     private byte[] serialize_ia(@Nullable InetAddress intf_addr) {
@@ -75,6 +106,26 @@ public class BridgingActivity extends AppCompatActivity {
         return fb;
     }
 
+    private HashMap<String, UsbDevice> get_all_serial_devs() {
+        UsbManager manager = (UsbManager) getSystemService(Context.USB_SERVICE);
+        HashMap<String, UsbDevice> devices = new HashMap<>();
+        PendingIntent permissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), PendingIntent.FLAG_IMMUTABLE);
+        IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(mUsbReceiver, filter, RECEIVER_NOT_EXPORTED);
+        }
+        for( UsbSerialDriver driver : UsbSerialProber.getDefaultProber().findAllDrivers(manager) ) {
+            UsbDevice device = driver.getDevice();
+            manager.requestPermission(device, permissionIntent);
+            String desc = String.format("%s (%s)",
+                device.getProductName(),
+                device.getManufacturerName()
+            );
+            devices.put( desc, driver.getDevice() );
+        }
+        return devices;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -100,6 +151,16 @@ public class BridgingActivity extends AppCompatActivity {
             // TODO: log something (maybe a toast?)
         }
         // getApplicationContext() ???
+        {
+            HashMap<String, UsbDevice> device_map = get_all_serial_devs();
+            List<String> addrlist = new ArrayList<>(device_map.size());
+            addrlist.addAll(device_map.keySet());
+            Collections.sort(addrlist);
+            ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
+                    android.R.layout.simple_dropdown_item_1line, addrlist);
+            AppCompatAutoCompleteTextView textView = findViewById(R.id.usb_device_dropdown);
+            textView.setAdapter(adapter);
+        }
         Button serviceButton = findViewById(R.id.serviceButton);
         serviceButton.setOnClickListener(new View.OnClickListener(){
             private boolean mServiceStarted = false;
