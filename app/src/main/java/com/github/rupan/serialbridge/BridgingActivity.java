@@ -25,7 +25,9 @@ import androidx.appcompat.widget.AppCompatAutoCompleteTextView;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.Toast;
 
 import java.io.ByteArrayOutputStream;
@@ -98,7 +100,21 @@ public class BridgingActivity extends AppCompatActivity {
             // TODO: log something (maybe a toast?)
         }
         // getApplicationContext() ???
-        startService( bridgingIntent );
-        stopService( bridgingIntent );
+        Button serviceButton = findViewById(R.id.serviceButton);
+        serviceButton.setOnClickListener(new View.OnClickListener(){
+            private boolean mServiceStarted = false;
+            @Override
+            public void onClick(View view) {
+                if( !mServiceStarted ) {
+                    startService( bridgingIntent );
+                    serviceButton.setText("Stop service");
+                    mServiceStarted = true;
+                } else {
+                    stopService( bridgingIntent );
+                    serviceButton.setText("Start service");
+                    mServiceStarted = false;
+                }
+            }
+        });
     }
 }
