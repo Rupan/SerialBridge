@@ -21,7 +21,6 @@ package com.github.rupan.serialbridge;
 
 import android.app.Service;
 import android.content.Intent;
-import android.os.Build;
 import android.os.IBinder;
 import android.widget.Toast;
 
@@ -81,7 +80,7 @@ public class BridgingService extends Service {
 
         super.onStartCommand(intent, flags, startId);
         Toast.makeText(this, "service starting", Toast.LENGTH_SHORT).show();
-        byte[] sia = intent.getByteArrayExtra("com.android.contacts.BindAddr");
+        byte[] sia = intent.getByteArrayExtra("com.github.rupan.serialbridge.BindAddr");
         if( sia != null ) {
             try (ByteArrayInputStream bis = new ByteArrayInputStream(sia);
                  ObjectInputStream ois = new ObjectInputStream(bis)) {

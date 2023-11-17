@@ -75,7 +75,7 @@ public class BridgingActivity extends AppCompatActivity {
             HashMap<String, byte[]> address_map = get_all_addrs();
             byte[] ipv6_loopback = address_map.get("lo: ::1"); // FIXME
             if( ipv6_loopback != null ) {
-                bridgingIntent.putExtra("com.android.contacts.BindAddr", ipv6_loopback);
+                bridgingIntent.putExtra("com.github.rupan.serialbridge.BindAddr", ipv6_loopback);
             }
             List<String> addrlist = new ArrayList<>(address_map.size());
             addrlist.addAll(address_map.keySet());
