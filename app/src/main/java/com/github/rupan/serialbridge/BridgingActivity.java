@@ -19,6 +19,7 @@ with this program. If not, see <https://www.gnu.org/licenses/>.
 
 package com.github.rupan.serialbridge;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatAutoCompleteTextView;
 
@@ -41,8 +42,24 @@ import java.util.List;
 
 public class BridgingActivity extends AppCompatActivity {
 
-    private HashMap<String, byte[]> get_all_addrs() throws SocketException, NullPointerException {
-        HashMap<String, byte[]> fb = new HashMap<>();
+    @Nullable
+    private byte[] serialize_ia(@Nullable InetAddress intf_addr) {
+        if( intf_addr == null ) {
+            Toast.makeText(this,"Null InetAddress", Toast.LENGTH_SHORT).show();
+            return null;
+        }
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+             ObjectOutputStream oos = new ObjectOutputStream(bos)) {
+            oos.writeObject(intf_addr);
+            return bos.toByteArray();
+        } catch( IOException ioe ) {
+            Toast.makeText(this,"InetAddress serialization failed", Toast.LENGTH_SHORT).show();
+            return null;
+        }
+    }
+
+    private HashMap<String, InetAddress> get_all_addrs() throws SocketException, NullPointerException {
+        HashMap<String, InetAddress> fb = new HashMap<>();
         Enumeration<NetworkInterface> e = NetworkInterface.getNetworkInterfaces();
         while (e.hasMoreElements()) {
             NetworkInterface intf = e.nextElement();
@@ -50,14 +67,7 @@ public class BridgingActivity extends AppCompatActivity {
             while (i.hasMoreElements()) {
                 InetAddress intf_addr = i.nextElement();
                 String hn = String.format("%s: %s", intf.getName(), intf_addr.getHostAddress());
-                try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                     ObjectOutputStream oos = new ObjectOutputStream(bos)) {
-                    oos.writeObject(intf_addr);
-                    fb.put( hn, bos.toByteArray() );
-                } catch( IOException ioe ) {
-                    Toast.makeText(this,
-                            "InetAddress serialization failed", Toast.LENGTH_SHORT).show();
-                }
+                fb.put( hn, intf_addr );
             }
         }
         return fb;
@@ -72,10 +82,10 @@ public class BridgingActivity extends AppCompatActivity {
         // t.setText(R.string.user_greeting);
         Intent bridgingIntent = new Intent( this, BridgingService.class );
         try {
-            HashMap<String, byte[]> address_map = get_all_addrs();
-            byte[] ipv6_loopback = address_map.get("lo: ::1"); // FIXME
-            if( ipv6_loopback != null ) {
-                bridgingIntent.putExtra("com.github.rupan.serialbridge.BindAddr", ipv6_loopback);
+            HashMap<String, InetAddress> address_map = get_all_addrs();
+            byte[] sia = serialize_ia( address_map.get("lo: ::1") ); // FIXME
+            if( sia != null ) {
+                bridgingIntent.putExtra("com.github.rupan.serialbridge.BindAddr", sia);
             }
             List<String> addrlist = new ArrayList<>(address_map.size());
             addrlist.addAll(address_map.keySet());
