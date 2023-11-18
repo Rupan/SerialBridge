@@ -19,7 +19,6 @@ with this program. If not, see <https://www.gnu.org/licenses/>.
 
 package com.github.rupan.serialbridge;
 
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatAutoCompleteTextView;
 
@@ -115,7 +114,7 @@ public class BridgingActivity extends AppCompatActivity {
         }
         List<String> addrlist = new ArrayList<>(mAddressMap.size());
         addrlist.addAll(mAddressMap.keySet());
-        Collections.sort(addrlist);
+        addrlist.sort(Collections.reverseOrder());
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
                 android.R.layout.simple_dropdown_item_1line, addrlist);
         AppCompatAutoCompleteTextView textView = findViewById(R.id.ip_address_dropdown);
@@ -126,7 +125,7 @@ public class BridgingActivity extends AppCompatActivity {
         mUsbDeviceMap = get_all_serial_devs();
         List<String> addrlist = new ArrayList<>(mUsbDeviceMap.size());
         addrlist.addAll(mUsbDeviceMap.keySet());
-        Collections.sort(addrlist);
+        addrlist.sort(Collections.reverseOrder());
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
                 android.R.layout.simple_dropdown_item_1line, addrlist);
         AppCompatAutoCompleteTextView textView = findViewById(R.id.usb_device_dropdown);
@@ -170,11 +169,11 @@ public class BridgingActivity extends AppCompatActivity {
                 }
                 if( !mServiceStarted ) {
                     startService( bridgingIntent );
-                    serviceButton.setText("Stop service");
+                    serviceButton.setText(R.string.stop_service);
                     mServiceStarted = true;
                 } else {
                     stopService( bridgingIntent );
-                    serviceButton.setText("Start service");
+                    serviceButton.setText(R.string.start_service);
                     mServiceStarted = false;
                 }
             }
