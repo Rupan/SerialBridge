@@ -21,6 +21,7 @@ package com.github.rupan.serialbridge;
 
 import android.app.Service;
 import android.content.Intent;
+import android.hardware.usb.UsbDevice;
 import android.os.IBinder;
 import android.widget.Toast;
 
@@ -49,6 +50,8 @@ Can use Thread.isAlive() to check whether it is running
 
 public class BridgingService extends Service {
     InetAddress mBindAddress = null;
+    UsbDevice mUsbDevice = null;
+
     Thread mServiceThread = new Thread() {
         public void run() {
             try ( ServerSocketChannel serverSocketChannel = ServerSocketChannel.open() ) {
@@ -80,18 +83,8 @@ public class BridgingService extends Service {
 
         super.onStartCommand(intent, flags, startId);
         Toast.makeText(this, "service starting", Toast.LENGTH_SHORT).show();
-        byte[] sia = intent.getByteArrayExtra("com.github.rupan.serialbridge.BindAddr");
-        if( sia != null ) {
-            try (ByteArrayInputStream bis = new ByteArrayInputStream(sia);
-                 ObjectInputStream ois = new ObjectInputStream(bis)) {
-                mBindAddress = (InetAddress) ois.readObject();
-//                Toast.makeText(this, String.format("Will bind listener to %s",
-//                        mBindAddress.getHostAddress()), Toast.LENGTH_SHORT).show();
-            } catch( IOException | ClassNotFoundException ioe ) {
-                Toast.makeText(this, "Exception deserializing InetAddress",
-                        Toast.LENGTH_SHORT).show();
-            }
-        }
+        mBindAddress = intent.getParcelableExtra("com.github.rupan.serialbridge.BindAddr", InetAddress.class);
+        mUsbDevice = intent.getParcelableExtra("com.github.rupan.serialbridge.UsbDevice", UsbDevice.class);
         mServiceThread.start();
         // If we get killed, after returning from here, restart
         return START_STICKY;

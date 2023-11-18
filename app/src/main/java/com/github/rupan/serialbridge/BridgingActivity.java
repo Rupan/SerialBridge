@@ -35,14 +35,12 @@ import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -53,6 +51,8 @@ import java.util.HashMap;
 import java.util.List;
 
 public class BridgingActivity extends AppCompatActivity {
+    HashMap<String, InetAddress> mAddressMap = new HashMap<>();
+    HashMap<String, UsbDevice> mUsbDeviceMap = new HashMap<>();
     private static final String ACTION_USB_PERMISSION = "com.github.rupan.serialbridge.USB_PERMISSION";
     private final BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
@@ -73,22 +73,6 @@ public class BridgingActivity extends AppCompatActivity {
             }
         }
     };
-
-    @Nullable
-    private byte[] serialize_ia(@Nullable InetAddress intf_addr) {
-        if( intf_addr == null ) {
-            Toast.makeText(this,"Null InetAddress", Toast.LENGTH_SHORT).show();
-            return null;
-        }
-        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-             ObjectOutputStream oos = new ObjectOutputStream(bos)) {
-            oos.writeObject(intf_addr);
-            return bos.toByteArray();
-        } catch( IOException ioe ) {
-            Toast.makeText(this,"InetAddress serialization failed", Toast.LENGTH_SHORT).show();
-            return null;
-        }
-    }
 
     private HashMap<String, InetAddress> get_all_addrs() throws SocketException, NullPointerException {
         HashMap<String, InetAddress> fb = new HashMap<>();
@@ -123,6 +107,32 @@ public class BridgingActivity extends AppCompatActivity {
         return devices;
     }
 
+    private void update_ip_address_list() {
+        try {
+            mAddressMap = get_all_addrs();
+        } catch (SocketException | NullPointerException se) {
+            Toast.makeText(this, "Address enumeration failed", Toast.LENGTH_SHORT).show();
+        }
+        List<String> addrlist = new ArrayList<>(mAddressMap.size());
+        addrlist.addAll(mAddressMap.keySet());
+        Collections.sort(addrlist);
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
+                android.R.layout.simple_dropdown_item_1line, addrlist);
+        AppCompatAutoCompleteTextView textView = findViewById(R.id.ip_address_dropdown);
+        textView.setAdapter(adapter);
+    }
+
+    private void update_usb_device_list() {
+        mUsbDeviceMap = get_all_serial_devs();
+        List<String> addrlist = new ArrayList<>(mUsbDeviceMap.size());
+        addrlist.addAll(mUsbDeviceMap.keySet());
+        Collections.sort(addrlist);
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
+                android.R.layout.simple_dropdown_item_1line, addrlist);
+        AppCompatAutoCompleteTextView textView = findViewById(R.id.usb_device_dropdown);
+        textView.setAdapter(adapter);
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -130,39 +140,34 @@ public class BridgingActivity extends AppCompatActivity {
         // final TextView t = findViewById(R.id.network_parameters_header);
         // t.setText("some static text");
         // t.setText(R.string.user_greeting);
-        Intent bridgingIntent = new Intent( this, BridgingService.class );
-        try {
-            HashMap<String, InetAddress> address_map = get_all_addrs();
-            byte[] sia = serialize_ia( address_map.get("lo: ::1") ); // FIXME
-            if( sia != null ) {
-                bridgingIntent.putExtra("com.github.rupan.serialbridge.BindAddr", sia);
-            }
-            List<String> addrlist = new ArrayList<>(address_map.size());
-            addrlist.addAll(address_map.keySet());
-            Collections.sort(addrlist);
-            ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
-                    android.R.layout.simple_dropdown_item_1line, addrlist);
-            AppCompatAutoCompleteTextView textView = findViewById(R.id.ip_address_dropdown);
-            textView.setAdapter(adapter);
-        } catch (SocketException | NullPointerException se) {
-            // TODO: log something (maybe a toast?)
-        }
-        // getApplicationContext() ???
-        {
-            HashMap<String, UsbDevice> device_map = get_all_serial_devs();
-            List<String> addrlist = new ArrayList<>(device_map.size());
-            addrlist.addAll(device_map.keySet());
-            Collections.sort(addrlist);
-            ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
-                    android.R.layout.simple_dropdown_item_1line, addrlist);
-            AppCompatAutoCompleteTextView textView = findViewById(R.id.usb_device_dropdown);
-            textView.setAdapter(adapter);
-        }
+
+        update_ip_address_list();
+        update_usb_device_list();
+
         Button serviceButton = findViewById(R.id.serviceButton);
         serviceButton.setOnClickListener(new View.OnClickListener(){
             private boolean mServiceStarted = false;
             @Override
             public void onClick(View view) {
+                Intent bridgingIntent = new Intent( getApplicationContext(), BridgingService.class );
+                // ip address
+                final TextView iad = findViewById(R.id.ip_address_dropdown);
+                final String net_selection = iad.getText().toString();
+                final InetAddress addr = mAddressMap.get(net_selection);
+                if( addr != null ) {
+                    bridgingIntent.putExtra("com.github.rupan.serialbridge.BindAddr", addr);
+                } else {
+                    Toast.makeText(getApplicationContext(), "No IP address selected", Toast.LENGTH_SHORT).show();
+                }
+                // serial device
+                final TextView udd = findViewById(R.id.usb_device_dropdown);
+                final String usb_selection = udd.getText().toString();
+                final UsbDevice dev = mUsbDeviceMap.get(usb_selection);
+                if( dev != null) {
+                    bridgingIntent.putExtra("com.github.rupan.serialbridge.UsbDevice", dev);
+                } else {
+                    Toast.makeText(getApplicationContext(), "No serial device selected", Toast.LENGTH_SHORT).show();
+                }
                 if( !mServiceStarted ) {
                     startService( bridgingIntent );
                     serviceButton.setText("Stop service");
