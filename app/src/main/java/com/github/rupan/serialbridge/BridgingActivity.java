@@ -30,7 +30,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -60,10 +59,10 @@ public class BridgingActivity extends AppCompatActivity {
             String action = intent.getAction();
             if (ACTION_USB_PERMISSION.equals(action)) {
                 synchronized (this) {
-                    UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+                    UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice.class);
 
                     if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
-                        if(device != null){
+                        if( device != null ){
                             //call method to set up device communication
                         }
                     }
@@ -111,9 +110,7 @@ public class BridgingActivity extends AppCompatActivity {
         HashMap<String, UsbDevice> devices = new HashMap<>();
         PendingIntent permissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), PendingIntent.FLAG_IMMUTABLE);
         IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(mUsbReceiver, filter, RECEIVER_NOT_EXPORTED);
-        }
+        registerReceiver(mUsbReceiver, filter, RECEIVER_NOT_EXPORTED);
         for( UsbSerialDriver driver : UsbSerialProber.getDefaultProber().findAllDrivers(manager) ) {
             UsbDevice device = driver.getDevice();
             manager.requestPermission(device, permissionIntent);
